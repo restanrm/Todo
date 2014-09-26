@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+	<head> 
+		<meta charset="utf-8"/>
+		<meta name="viewport" content="user-scalable=no,width=device-width" />
+		<link rel="stylesheet" href='{{printf "%s/style.css" .Static_dir}}' /> 
+		<script> 
+			function toggleGray(name){
+				var element = document.getElementById(name).style;
+				if( element.textDecoration == "line-through" ) {
+					element.color = "black"; 
+					element.textDecoration = "none";
+				} else { 
+					element.color = "#D3D3D3" ; 
+					element.textDecoration = "line-through";
+				}
+			}
+			function hide(id) {
+				var element = document.getElementById(id).style ; 
+				if( element.display == "none" ) {
+					element.display = "block" ; 
+				} else { 
+					element.display = "none" ; 
+				}
+			}
+		</script>
+	<title> Liste de courses </title> 
+	</head>
+	<body>
+		<h1> Liste de course </h1>
+		<h2 onclick="hide('form')"> Editer </h2>
+		<p>
+			<form id="form" method="post" style="display:none;">
+				<textarea name="liste" rows=15 cols=40>
+					{{.Raw_body}}
+				</textarea><br />
+				<input type="submit" />
+			</form>
+		</p>
+		<p>
+			{{range $name, $value := .Processed_body}}<h3>{{$name}}</h3>
+				<ul> 
+					{{range .}}<li>{{.}}</li>
+					{{end}}
+				</ul>
+			{{end}}
+	</body> 
+</html>
