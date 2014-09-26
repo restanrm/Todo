@@ -30,32 +30,20 @@ type index struct {
 func mainHandler(w http.ResponseWriter, r *http.Request) {
 	log.Println(r.URL.Path)
 	// Utilise le template pour faire une redirection vers cette page.
-	if strings.Contains(r.URL.Path, ".css") {
-		log.Print("Entre dans la fonction de traitement pour chttp")
-		chttp.ServeHTTP(w, r)
-	} else {
+	switch {
+	case strings.Contains(r.URL.Path, "style.css"):
+		chttp.ServeHTTP(w,r)
+	case r.URL.Path == "/":
+		log.Println(r.URL.Path)
 		names, err := listeFiles() 
 		if err != nil { 
 			http.Error(w, "Could not retrieve list of files", http.StatusInternalServerError)
 			log.Fatal("Could not retrieve list of files")
 		}
 		s_index := index{Static_dir:staticDir, Title:"Liste", T_names: names}
-		//t := template.Must(template.ParseFiles(templateDir + "/index.html"))
-		//t.Execute(w, s_index)
-		// remplace l'éxecution du template par un système qui est chargé au moment du lancement du programme.
 		templates.ExecuteTemplate(w, "index.html", s_index)
-	}
-}
-
-// gestion par page, qui me retourne le contenu de la page en fonction de son titre et du contenu. 
-// Cette fonction va lire le fichier qui correspond au titre afin d'en afficher le contenu. 
-func listeHandler(w http.ResponseWriter, r *http.Request) {
-	log.Println(r.URL.Path)
-	if strings.Contains(r.URL.Path, ".css") {
-		log.Print("Entre dans la fonction liste de traitement pour chttp")
-		chttp.ServeHTTP(w, r)
-	} else {
-		regex := regexp.MustCompile("/Liste/([^/]*)(\\..*)*$")
+	default:
+		regex := regexp.MustCompile("/([^/]*)(\\..*)*$")
 		matches := regex.FindStringSubmatch(r.URL.Path)
 		s_liste := liste{Static_dir:staticDir}
 		s_liste.Title = matches[1]
@@ -66,9 +54,8 @@ func listeHandler(w http.ResponseWriter, r *http.Request) {
 		processBody(&s_liste)
 		templates.ExecuteTemplate(w, "liste.html", s_liste)
 		//http.Error(w, "Page not found", http.StatusNotFound)
-
 	}
-}	
+}
 
 func processBody(l *liste) {
 	var carte = make(map[string][]string)
@@ -130,9 +117,7 @@ var templates = template.Must(template.ParseFiles(templateDir + "/index.html", t
 
 func main() {
 	chttp.Handle("/", http.FileServer(http.Dir("./")))
-	chttp.Handle("/Liste/", http.FileServer(http.Dir("./")))
 	http.HandleFunc("/", mainHandler)
-	http.HandleFunc("/Liste/", listeHandler)
 	err:=http.ListenAndServe(":8080", nil)
 	if err != nil {
 		log.Fatal("Fail to listen on port 8080")
