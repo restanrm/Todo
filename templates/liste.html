@@ -24,10 +24,10 @@
 				}
 			}
 		</script>
-	<title> Liste de courses </title> 
+		<title> {{.Title}} </title> 
 	</head>
 	<body>
-		<h1> Liste de course </h1>
+		<h1> {{.Title}} </h1>
 		<h2 onclick="hide('form')"> Editer </h2>
 		<p>
 			<form id="form" method="post" style="display:none;">
@@ -40,7 +40,7 @@
 		<p>
 			{{range $name, $value := .Processed_body}}<h3>{{$name}}</h3>
 				<ul> 
-					{{range .}}<li>{{.}}</li>
+					{{range $elem := $value}}<li><span id="{{$elem.Index}}" onclick="toggleGray('{{$elem.Index}}')">{{$elem.Valeur}}</span></li>
 					{{end}}
 				</ul>
 			{{end}}

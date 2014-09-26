@@ -14,11 +14,16 @@ const resourceDir = "resources"
 const staticDir = "static"
 const templateDir = "templates"
 
+type element struct {
+	Index  int
+	Valeur string
+}
+
 type liste struct {
 	Static_dir     string
 	Title          string
 	Raw_body       string
-	Processed_body map[string][]string
+	Processed_body map[string][]element
 }
 
 type index struct {
@@ -29,7 +34,6 @@ type index struct {
 
 // main Handle qui me retourne une page avec la gestion de la liste des pages existantes
 func mainHandler(w http.ResponseWriter, r *http.Request) {
-	log.Println(r.URL.Path)
 	// Utilise le template pour faire une redirection vers cette page.
 	switch {
 	case strings.Contains(r.URL.Path, "style.css"):
@@ -59,16 +63,18 @@ func mainHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func processBody(l *liste) {
-	var carte = make(map[string][]string)
+	var carte = make(map[string][]element)
 	var menu string
+	var idx int = 0
 	for _, line := range strings.Split(l.Raw_body, "\n") {
 		line = strings.TrimSpace(line)
 		if len(line) > 1 && line[0] != '#' && strings.TrimSpace(line) != "" {
 			if len(line) > 2 && line[0] == '=' {
 				menu = strings.TrimSpace(line[1:])
-				carte[menu] = make([]string, 0)
+				carte[menu] = make([]element, 0)
 			} else if len(line) > 2 && line[0] == '-' {
-				carte[menu] = append(carte[menu], strings.TrimSpace(line[1:]))
+				carte[menu] = append(carte[menu], element{Index: idx, Valeur: strings.TrimSpace(line[1:])})
+				idx += 1
 			}
 		}
 	}
