@@ -120,6 +120,9 @@ func (l *liste) saveListe() error {
 	if err != nil || n != len(l.Raw_body) {
 		return err
 	}
+	if err := file.Truncate(int64(n)); err!=nil { // truncate end of file if input is shorter than previous file
+		return err
+	}
 	return nil
 }
 
