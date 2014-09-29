@@ -7,6 +7,7 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"flag"
 )
 
 const resourceDir = "resources"
@@ -151,9 +152,21 @@ var templates = template.Must(template.ParseFiles(templateDir+"/index.html", tem
 var regex_title_page = regexp.MustCompile("/([^/]*)(\\..*)*$")
 
 func main() {
+	var confDir = flag.String("config", "/home/arn/.go/src/restanrm/miam/", "Dossier de données permettant le fonctionnement du service")
+	var adresse = flag.String("adresse", ":8080", "Adresse d'écoute pour proposer le service")
+	flag.Parse()
+	// Go into configuration directory
+	f_confdir, err := os.Open(*confDir)
+	if err!=nil {
+		log.Fatal("Could not open directory: ", err)
+	}
+	if err:=f_confdir.Chdir(); err!=nil {
+		log.Fatal("Could not go in configuration directory: ",err)
+	}
+	// Start webService
 	chttp.Handle("/", http.FileServer(http.Dir("./")))
 	http.HandleFunc("/", mainHandler)
-	err := http.ListenAndServe(":8080", nil)
+	err = http.ListenAndServe(*adresse, nil)
 	if err != nil {
 		log.Fatal("Fail to listen on port 8080")
 	}
