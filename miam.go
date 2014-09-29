@@ -47,7 +47,7 @@ func mainHandler(w http.ResponseWriter, r *http.Request) {
 		s_index := index{Static_dir: staticDir, Title: "Liste", T_names: names}
 		templates.ExecuteTemplate(w, "index.html", s_index)
 	case r.FormValue("liste") != "":
-		s_liste := getListe(r)
+		s_liste := getTitle(r)
 		s_liste.Raw_body = r.FormValue("liste")
 		if err := s_liste.saveListe(); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -55,7 +55,7 @@ func mainHandler(w http.ResponseWriter, r *http.Request) {
 		s_liste.processBody()
 		templates.ExecuteTemplate(w, "liste.html", s_liste)
 	default:
-		s_liste := getListe(r)
+		s_liste := getTitle(r)
 		err := s_liste.loadListe()
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusNotFound)
@@ -66,7 +66,7 @@ func mainHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func getListe(r *http.Request) liste {
+func getTitle(r *http.Request) liste {
 	s_liste := liste{Static_dir: staticDir}
 	matches := regex_title_page.FindStringSubmatch(r.URL.Path)
 	s_liste.Title = matches[1]
