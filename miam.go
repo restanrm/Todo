@@ -39,7 +39,6 @@ func mainHandler(w http.ResponseWriter, r *http.Request) {
 	case strings.Contains(r.URL.Path, "style.css"):
 		chttp.ServeHTTP(w, r)
 	case r.URL.Path == "/":
-		log.Println(r.URL.Path)
 		names, err := listeFiles()
 		if err != nil {
 			http.Error(w, "Could not retrieve list of files", http.StatusInternalServerError)
@@ -115,13 +114,11 @@ func (l *liste) saveListe() error {
 	filename := resourceDir + "/" + l.Title + ".txt"
 	file, err := os.OpenFile(filename, os.O_WRONLY, os.FileMode(0644))
 	if err != nil {
-		log.Print(err)
 		return err
 	}
 	l.Raw_body = strings.TrimSpace(l.Raw_body)
 	n, err := file.WriteString(l.Raw_body)
 	if err != nil || n != len(l.Raw_body) {
-		log.Print(n, err)
 		return err
 	}
 	return nil
