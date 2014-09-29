@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"html/template"
 	"log"
 	"net/http"
@@ -106,7 +105,7 @@ func (l *liste) loadListe() error {
 	if _, err := file.Read(buf); err != nil {
 		return err
 	}
-	l.Raw_body = fmt.Sprintf("%s", buf)
+	l.Raw_body = strings.TrimSpace(string(buf))
 	return nil
 }
 
