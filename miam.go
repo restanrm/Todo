@@ -47,22 +47,34 @@ func mainHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		s_index := index{Static_dir: staticDir, Title: "Liste", T_names: names}
 		templates.ExecuteTemplate(w, "index.html", s_index)
+	case r.FormValue("liste") != "":
+		s_liste := getListe(r)
+		s_liste.Raw_body = r.FormValue("liste")
+		if err := s_liste.saveListe(); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+		s_liste.processBody()
+		templates.ExecuteTemplate(w, "liste.html", s_liste)
 	default:
-		regex := regexp.MustCompile("/([^/]*)(\\..*)*$")
-		matches := regex.FindStringSubmatch(r.URL.Path)
-		s_liste := liste{Static_dir: staticDir}
-		s_liste.Title = matches[1]
-		err := loadListe(&s_liste)
+		s_liste := getListe(r)
+		err := s_liste.loadListe()
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusNotFound)
 		}
-		processBody(&s_liste)
+		s_liste.processBody()
 		templates.ExecuteTemplate(w, "liste.html", s_liste)
 		//http.Error(w, "Page not found", http.StatusNotFound)
 	}
 }
 
-func processBody(l *liste) {
+func getListe(r *http.Request) liste {
+	s_liste := liste{Static_dir: staticDir}
+	matches := regex_title_page.FindStringSubmatch(r.URL.Path)
+	s_liste.Title = matches[1]
+	return s_liste
+}
+
+func (l *liste) processBody() {
 	var carte = make(map[string][]element)
 	var menu string
 	var idx int = 0
@@ -81,7 +93,7 @@ func processBody(l *liste) {
 	l.Processed_body = carte
 }
 
-func loadListe(l *liste) error {
+func (l *liste) loadListe() error {
 	filename := resourceDir + "/" + l.Title + ".txt"
 	stat, err := os.Stat(filename)
 	if err != nil {
@@ -96,6 +108,22 @@ func loadListe(l *liste) error {
 		return err
 	}
 	l.Raw_body = fmt.Sprintf("%s", buf)
+	return nil
+}
+
+func (l *liste) saveListe() error {
+	filename := resourceDir + "/" + l.Title + ".txt"
+	file, err := os.OpenFile(filename, os.O_WRONLY, os.FileMode(0644))
+	if err != nil {
+		log.Print(err)
+		return err
+	}
+	l.Raw_body = strings.TrimSpace(l.Raw_body)
+	n, err := file.WriteString(l.Raw_body)
+	if err != nil || n != len(l.Raw_body) {
+		log.Print(n, err)
+		return err
+	}
 	return nil
 }
 
@@ -121,6 +149,7 @@ func listeFiles() ([]string, error) {
 
 var chttp = http.NewServeMux()
 var templates = template.Must(template.ParseFiles(templateDir+"/index.html", templateDir+"/liste.html"))
+var regex_title_page = regexp.MustCompile("/([^/]*)(\\..*)*$")
 
 func main() {
 	chttp.Handle("/", http.FileServer(http.Dir("./")))
