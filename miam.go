@@ -34,6 +34,7 @@ type index struct {
 
 // main Handle qui me retourne une page avec la gestion de la liste des pages existantes
 func mainHandler(w http.ResponseWriter, r *http.Request) {
+	var templates = template.Must(template.ParseFiles(templateDir+"/index.html", templateDir+"/liste.html"))
 	// Utilise le template pour faire une redirection vers cette page.
 	switch {
 	case strings.Contains(r.URL.Path, "style.css"):
@@ -148,7 +149,6 @@ func listeFiles() ([]string, error) {
 }
 
 var chttp = http.NewServeMux()
-var templates = template.Must(template.ParseFiles(templateDir+"/index.html", templateDir+"/liste.html"))
 var regex_title_page = regexp.MustCompile("/([^/]*)(\\..*)*$")
 
 func main() {
