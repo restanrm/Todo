@@ -10,9 +10,13 @@ import (
 	"flag"
 )
 
-const resourceDir = "resources"
-const staticDir = "static"
-const templateDir = "templates"
+type configuration struct { 
+	resourceDir, staticDir, templateDir string 
+	basePath string
+	listenAddress string
+	templates *template.Template
+}
+var conf configuration // variable globale de configuration de l'application
 
 type element struct {
 	Index  int
@@ -34,8 +38,9 @@ type index struct {
 
 // main Handle qui me retourne une page avec la gestion de la liste des pages existantes
 func mainHandler(w http.ResponseWriter, r *http.Request) {
-	var templates = template.Must(template.ParseFiles(templateDir+"/index.html", templateDir+"/liste.html"))
-	// Utilise le template pour faire une redirection vers cette page.
+	// load templates into global configuration variable
+	conf.templates = template.Must(template.ParseFiles(conf.templateDir+"/index.html", conf.templateDir+"/liste.html"))
+
 	switch {
 	case strings.Contains(r.URL.Path, "style.css"):
 		chttp.ServeHTTP(w, r)
@@ -45,8 +50,8 @@ func mainHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Could not retrieve list of files", http.StatusInternalServerError)
 			log.Fatal("Could not retrieve list of files")
 		}
-		s_index := index{Static_dir: staticDir, Title: "Liste", T_names: names}
-		templates.ExecuteTemplate(w, "index.html", s_index)
+		s_index := index{Static_dir: conf.staticDir, Title: "Liste", T_names: names}
+		conf.templates.ExecuteTemplate(w, "index.html", s_index)
 	case r.FormValue("liste") != "":
 		s_liste := getTitle(r)
 		s_liste.Raw_body = r.FormValue("liste")
@@ -54,7 +59,7 @@ func mainHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 		s_liste.processBody()
-		templates.ExecuteTemplate(w, "liste.html", s_liste)
+		conf.templates.ExecuteTemplate(w, "liste.html", s_liste)
 	default:
 		s_liste := getTitle(r)
 		err := s_liste.loadListe()
@@ -62,13 +67,12 @@ func mainHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusNotFound)
 		}
 		s_liste.processBody()
-		templates.ExecuteTemplate(w, "liste.html", s_liste)
-		//http.Error(w, "Page not found", http.StatusNotFound)
+		conf.templates.ExecuteTemplate(w, "liste.html", s_liste)
 	}
 }
 
 func getTitle(r *http.Request) liste {
-	s_liste := liste{Static_dir: staticDir}
+	s_liste := liste{Static_dir: conf.staticDir}
 	matches := regex_title_page.FindStringSubmatch(r.URL.Path)
 	s_liste.Title = matches[1]
 	return s_liste
@@ -94,7 +98,7 @@ func (l *liste) processBody() {
 }
 
 func (l *liste) loadListe() error {
-	filename := resourceDir + "/" + l.Title + ".txt"
+	filename := conf.resourceDir + "/" + l.Title + ".txt"
 	stat, err := os.Stat(filename)
 	if err != nil {
 		return (err)
@@ -112,7 +116,7 @@ func (l *liste) loadListe() error {
 }
 
 func (l *liste) saveListe() error {
-	filename := resourceDir + "/" + l.Title + ".txt"
+	filename := conf.resourceDir + "/" + l.Title + ".txt"
 	file, err := os.OpenFile(filename, os.O_WRONLY, os.FileMode(0644))
 	if err != nil {
 		return err
@@ -129,12 +133,12 @@ func (l *liste) saveListe() error {
 }
 
 func listeFiles() ([]string, error) {
-	dir, err := os.Open(resourceDir)
+	dir, err := os.Open(conf.resourceDir)
 	if err != nil {
-		log.Fatalf("Could not open dir %v for listing", resourceDir)
+		log.Fatalf("Could not open dir %v for listing", conf.resourceDir)
 		return nil, err
 	}
-	fileListe, err := dir.Readdirnames(0) //liste all elements from resourceDir
+	fileListe, err := dir.Readdirnames(0) //liste all elements from conf.resourceDir
 	if err != nil {
 		log.Fatalf("Could not retrieve list of files")
 		return nil, err
@@ -152,21 +156,26 @@ var chttp = http.NewServeMux()
 var regex_title_page = regexp.MustCompile("/([^/]*)(\\..*)*$")
 
 func main() {
+	conf = configuration{resourceDir:"resources",templateDir:"templates",staticDir:"static"}
 	var confDir = flag.String("config", "/home/arn/.go/src/restanrm/miam/", "Dossier de données permettant le fonctionnement du service")
 	var adresse = flag.String("adresse", ":8080", "Adresse d'écoute pour proposer le service")
 	flag.Parse()
+	conf.basePath = *confDir
+	conf.listenAddress = *adresse
+
 	// Go into configuration directory
-	f_confdir, err := os.Open(*confDir)
+	f_confdir, err := os.Open(conf.basePath)
 	if err!=nil {
 		log.Fatal("Could not open directory: ", err)
 	}
 	if err:=f_confdir.Chdir(); err!=nil {
 		log.Fatal("Could not go in configuration directory: ",err)
 	}
+
 	// Start webService
 	chttp.Handle("/", http.FileServer(http.Dir("./")))
 	http.HandleFunc("/", mainHandler)
-	err = http.ListenAndServe(*adresse, nil)
+	err = http.ListenAndServe(conf.listenAddress, nil)
 	if err != nil {
 		log.Fatal("Fail to listen on port 8080")
 	}
