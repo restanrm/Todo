@@ -1,21 +1,23 @@
 package main
 
 import (
+	"flag"
 	"html/template"
 	"log"
 	"net/http"
 	"os"
 	"regexp"
 	"strings"
-	"flag"
+	"github.com/restanrm/utils"
 )
 
-type configuration struct { 
-	resourceDir, staticDir, templateDir string 
-	basePath string
-	listenAddress string
-	templates *template.Template
+type configuration struct {
+	resourceDir, staticDir, templateDir string
+	basePath                            string
+	listenAddress                       string
+	templates                           *template.Template
 }
+
 var conf configuration // variable globale de configuration de l'application
 
 type element struct {
@@ -45,7 +47,7 @@ func mainHandler(w http.ResponseWriter, r *http.Request) {
 	case strings.Contains(r.URL.Path, "style.css"):
 		chttp.ServeHTTP(w, r)
 	case r.URL.Path == "/":
-		names, err := listeFiles()
+		names, err := utils.ListFiles(conf.resourceDir)
 		if err != nil {
 			http.Error(w, "Could not retrieve list of files", http.StatusInternalServerError)
 			log.Fatal("Could not retrieve list of files")
@@ -60,6 +62,15 @@ func mainHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		s_liste.processBody()
 		conf.templates.ExecuteTemplate(w, "liste.html", s_liste)
+		/*
+		* Idée pour l'intégration de la modification pour le status:
+		* Intégration d'un nouveau fichier permettant le stockage des données de status.
+		* En cas de création de nouvelle page (enregistrement) -> réinitialisation de ce fichier avec les nouvelles données.
+		*
+		* Utilisation du format JSON, abandon de la gestion par fichier brut comme on le fait maintenant
+		*
+		* Utilisation d'un autre format plus complexe nécessitant plus de caractères de gestion
+		 */
 	default:
 		s_liste := getTitle(r)
 		err := s_liste.loadListe()
@@ -126,38 +137,18 @@ func (l *liste) saveListe() error {
 	if err != nil || n != len(l.Raw_body) {
 		return err
 	}
-	if err := file.Truncate(int64(n)); err!=nil { // truncate end of file if input is shorter than previous file
+	if err := file.Truncate(int64(n)); err != nil { // truncate end of file if input is shorter than previous file
 		return err
 	}
 	return nil
-}
-
-func listeFiles() ([]string, error) {
-	dir, err := os.Open(conf.resourceDir)
-	if err != nil {
-		log.Fatalf("Could not open dir %v for listing", conf.resourceDir)
-		return nil, err
-	}
-	fileListe, err := dir.Readdirnames(0) //liste all elements from conf.resourceDir
-	if err != nil {
-		log.Fatalf("Could not retrieve list of files")
-		return nil, err
-	}
-	var out []string = make([]string, 0) // Création d'une liste vide
-	for _, file := range fileListe {
-		if ind := strings.LastIndex(file, "."); ind != -1 {
-			out = append(out, file[0:ind])
-		}
-	}
-	return out, nil
 }
 
 var chttp = http.NewServeMux()
 var regex_title_page = regexp.MustCompile("/([^/]*)(\\..*)*$")
 
 func main() {
-	conf = configuration{resourceDir:"resources",templateDir:"templates",staticDir:"static"}
-	var confDir = flag.String("config", "/home/arn/.go/src/restanrm/miam/", "Dossier de données permettant le fonctionnement du service")
+	conf = configuration{resourceDir: "resources", templateDir: "templates", staticDir: "static"}
+	var confDir = flag.String("config", "/home/arn/.go/src/github.com/restanrm/miam/", "Dossier de données permettant le fonctionnement du service")
 	var adresse = flag.String("adresse", ":8080", "Adresse d'écoute pour proposer le service")
 	flag.Parse()
 	conf.basePath = *confDir
@@ -165,11 +156,11 @@ func main() {
 
 	// Go into configuration directory
 	f_confdir, err := os.Open(conf.basePath)
-	if err!=nil {
+	if err != nil {
 		log.Fatal("Could not open directory: ", err)
 	}
-	if err:=f_confdir.Chdir(); err!=nil {
-		log.Fatal("Could not go in configuration directory: ",err)
+	if err := f_confdir.Chdir(); err != nil {
+		log.Fatal("Could not go in configuration directory: ", err)
 	}
 
 	// Start webService
