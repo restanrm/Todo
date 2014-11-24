@@ -8,7 +8,6 @@ import (
 	"os"
 	"regexp"
 	"strings"
-	"github.com/restanrm/utils"
 )
 
 type configuration struct {
@@ -47,7 +46,7 @@ func mainHandler(w http.ResponseWriter, r *http.Request) {
 	case strings.Contains(r.URL.Path, "style.css"):
 		chttp.ServeHTTP(w, r)
 	case r.URL.Path == "/":
-		names, err := utils.ListFiles(conf.resourceDir)
+		names, err := listFiles(conf.resourceDir)
 		if err != nil {
 			http.Error(w, "Could not retrieve list of files", http.StatusInternalServerError)
 			log.Fatal("Could not retrieve list of files")
@@ -141,6 +140,26 @@ func (l *liste) saveListe() error {
 		return err
 	}
 	return nil
+}
+
+func listFiles(dirpath string) ([]string, error) {
+	dir, err := os.Open(dirpath)
+	if err != nil {
+		log.Fatalf("Could not open dir %v for listing", dirpath)
+		return nil, err
+	}
+	fileListe, err := dir.Readdirnames(0) //liste all elements from conf.resourceDir
+	if err != nil {
+		log.Fatalf("Could not retrieve list of files")
+		return nil, err
+	}
+	var out []string = make([]string, 0) // Création d'une liste vide
+	for _, file := range fileListe {
+		if ind := strings.LastIndex(file, "."); ind != -1 {
+			out = append(out, file[0:ind])
+		}
+	}
+	return out, nil
 }
 
 var chttp = http.NewServeMux()
