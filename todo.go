@@ -167,7 +167,7 @@ var regex_title_page = regexp.MustCompile("/([^/]*)(\\..*)*$")
 
 func main() {
 	conf = configuration{resourceDir: "resources", templateDir: "templates", staticDir: "static"}
-	var confDir = flag.String("config", "/home/arn/.go/src/github.com/restanrm/miam/", "Dossier de données permettant le fonctionnement du service")
+	var confDir = flag.String("config", "/home/arn/.go/src/github.com/restanrm/todo/", "Dossier de données permettant le fonctionnement du service")
 	var adresse = flag.String("adresse", ":8080", "Adresse d'écoute pour proposer le service")
 	flag.Parse()
 	conf.basePath = *confDir
