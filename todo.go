@@ -187,6 +187,7 @@ func main() {
 	http.HandleFunc("/", mainHandler)
 	err = http.ListenAndServe(conf.listenAddress, nil)
 	if err != nil {
-		log.Fatal("Fail to listen on port 8080")
+		log.Fatal("Fail to listen on ", conf.listenAddress)
+		log.Fatal(err)
 	}
 }
