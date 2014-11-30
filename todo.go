@@ -91,8 +91,7 @@ func getTitle(r *http.Request) liste {
 func (l *liste) processBody() {
 	var carte = make(map[string][]element)
 	var menu string
-	var idx int = 0
-	for _, line := range strings.Split(l.Raw_body, "\n") {
+	for idx, line := range strings.Split(l.Raw_body, "\n") {
 		line = strings.TrimSpace(line)
 		if len(line) > 1 && line[0] != '#' && strings.TrimSpace(line) != "" {
 			if len(line) > 2 && line[0] == '=' {
@@ -100,7 +99,6 @@ func (l *liste) processBody() {
 				carte[menu] = make([]element, 0)
 			} else if len(line) > 2 && line[0] == '-' {
 				carte[menu] = append(carte[menu], element{Index: idx, Valeur: strings.TrimSpace(line[1:])})
-				idx += 1
 			}
 		}
 	}
@@ -167,7 +165,7 @@ var regex_title_page = regexp.MustCompile("/([^/]*)(\\..*)*$")
 
 func main() {
 	conf = configuration{resourceDir: "resources", templateDir: "templates", staticDir: "static"}
-	var confDir = flag.String("config", "/home/arn/.go/src/github.com/restanrm/todo/", "Dossier de données permettant le fonctionnement du service")
+	var confDir = flag.String("config", "/home/arn/.go/src/github.com/restanrm/Todo/", "Dossier de données permettant le fonctionnement du service")
 	var adresse = flag.String("adresse", ":8080", "Adresse d'écoute pour proposer le service")
 	flag.Parse()
 	conf.basePath = *confDir
