@@ -49,6 +49,7 @@ func mainHandler(w http.ResponseWriter, r *http.Request) {
 		s_liste.Raw_body = r.FormValue("liste")
 		if err := s_liste.saveListe(); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return 
 		}
 		s_liste.processBody()
 		conf.templates.ExecuteTemplate(w, "liste.html", s_liste)
@@ -66,6 +67,7 @@ func mainHandler(w http.ResponseWriter, r *http.Request) {
 		err := s_liste.loadListe()
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusNotFound)
+			return 
 		}
 		s_liste.processBody()
 		conf.templates.ExecuteTemplate(w, "liste.html", s_liste)
