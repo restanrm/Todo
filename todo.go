@@ -20,11 +20,6 @@ type configuration struct {
 
 var conf configuration // variable globale de configuration de l'application
 
-type element struct {
-	Index  int
-	Valeur string
-}
-
 type index struct {
 	Static_dir string
 	Title      string

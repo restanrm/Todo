@@ -5,6 +5,11 @@ import (
 	"strings"
 )
 
+type element struct {
+	Index  int
+	Valeur string
+}
+
 type liste struct {
 	Static_dir     string
 	Title          string
