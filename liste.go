@@ -1,9 +1,54 @@
 package main
 
 import (
+	"encoding/json"
 	"os"
 	"strings"
 )
+
+type State int
+type Tasks struct {
+	tasks    []Task
+	filepath string
+}
+
+const (
+	Checked State = iota
+	Unchecked
+)
+
+type Task struct {
+	Childs  []*Task
+	Status  State
+	Content string
+}
+
+func LoadTasks(filename string) (*Tasks, error) {
+	filepath := conf.resourceDir + "/" + filename + ".json"
+	tasks := Tasks{filepath: filepath}
+	file, err := os.Open(filepath)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+	decoder := json.NewDecoder(file)
+	err = decoder.Decode(&tasks.tasks)
+	if err != nil {
+		return nil, err
+	}
+	return &tasks, nil
+}
+
+func (t *Tasks) Save() error {
+	file, err := os.Create(t.filepath)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	enc := json.NewEncoder(file)
+	err = enc.Encode(t.tasks)
+	return err
+}
 
 type element struct {
 	Index  int
@@ -68,5 +113,3 @@ func (l *liste) saveListe() error {
 	}
 	return nil
 }
-
-

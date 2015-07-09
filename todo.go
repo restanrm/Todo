@@ -2,13 +2,14 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"html/template"
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
-	"path/filepath"
 )
 
 type configuration struct {
@@ -27,10 +28,25 @@ type index struct {
 }
 
 // main Handle qui me retourne une page avec la gestion de la liste des pages existantes
+func newHandler(w http.ResponseWriter, r *http.Request) {
+	lenPath := len("/newVersion/")
+	if len(r.URL.Path) <= lenPath {
+		http.Error(w, "Must Provide a valid path to the page", 404)
+		return
+	}
+	page := r.URL.Path[lenPath:]
+	tasks, err := LoadTasks(page)
+	if err != nil {
+		http.Error(w, "Failed to open file in argument", http.StatusInternalServerError)
+		log.Println("failed to open. Error : ", err)
+		return
+	}
+	fmt.Fprintln(w, tasks)
+}
+
 func mainHandler(w http.ResponseWriter, r *http.Request) {
+	log.Print("client=", r.RemoteAddr, " requested_url=", r.URL.Path)
 	switch {
-	case strings.Contains(r.URL.Path, "style.css"):
-		chttp.ServeHTTP(w, r)
 	case r.URL.Path == "/":
 		names, err := listFiles(conf.resourceDir)
 		if err != nil {
@@ -44,7 +60,7 @@ func mainHandler(w http.ResponseWriter, r *http.Request) {
 		s_liste.Raw_body = r.FormValue("liste")
 		if err := s_liste.saveListe(); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return 
+			return
 		}
 		s_liste.processBody()
 		conf.templates.ExecuteTemplate(w, "liste.html", s_liste)
@@ -62,7 +78,7 @@ func mainHandler(w http.ResponseWriter, r *http.Request) {
 		err := s_liste.loadListe()
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusNotFound)
-			return 
+			return
 		}
 		s_liste.processBody()
 		conf.templates.ExecuteTemplate(w, "liste.html", s_liste)
@@ -75,6 +91,7 @@ func getTitle(r *http.Request) liste {
 	s_liste.Title = matches[1]
 	return s_liste
 }
+
 func listFiles(dirpath string) ([]string, error) {
 	dir, err := os.Open(dirpath)
 	if err != nil {
@@ -95,7 +112,6 @@ func listFiles(dirpath string) ([]string, error) {
 	return out, nil
 }
 
-var chttp = http.NewServeMux()
 var regex_title_page = regexp.MustCompile("/([^/]*)(\\..*)*$")
 
 func main() {
@@ -122,12 +138,13 @@ func main() {
 		log.Fatal("Could not go in configuration directory: ", err)
 	}
 
-	// load templates in cache 
+	// load templates in cache
 	conf.templates = template.Must(template.ParseFiles(conf.templateDir+"/index.html", conf.templateDir+"/liste.html"))
 
 	// Start webService
-	chttp.Handle("/", http.FileServer(http.Dir("./")))
+	http.Handle("/static/css/", http.StripPrefix("/static/css", http.FileServer(http.Dir("./static/css"))))
 	http.HandleFunc("/", mainHandler)
+	http.HandleFunc("/newVersion/", newHandler)
 	err = http.ListenAndServe(conf.listenAddress, nil)
 	if err != nil {
 		log.Fatal("Fail to listen on ", conf.listenAddress)
